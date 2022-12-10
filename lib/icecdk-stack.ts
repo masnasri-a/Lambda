@@ -55,8 +55,18 @@ export class IcecdkStack extends cdk.Stack {
 
 
   httpApi.addRoutes({
-    path: '/influencer/{Id}',
-    methods: [HttpMethod.GET],
+    path: '/influencer/{id}',
+    methods: [HttpMethod.GET, HttpMethod.DELETE],
+    integration: new HttpLambdaIntegration(
+      'influencer-integration',
+      influencer,
+    ),
+  });
+
+
+  httpApi.addRoutes({
+    path: '/influencer',
+    methods: [HttpMethod.ANY],
     integration: new HttpLambdaIntegration(
       'influencer-integration',
       influencer,

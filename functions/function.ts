@@ -1,21 +1,43 @@
 import { Handler } from "aws-lambda";
-import { DynamoDBClient,ListTablesCommand,GetItemCommand } from "@aws-sdk/client-dynamodb";
+import { DynamoDBClient, ListTablesCommand, GetItemCommand, DynamoDB, QueryCommand } from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient, PutCommand, GetCommand } from "@aws-sdk/lib-dynamodb";
 
 const TABLE_NAME: string = "IceTable";
 
 export const handler: Handler = async (event, context) => {
-    // console.log(event);
-    
+    console.log(event);
 
 
-    const httpMethod = event.httpMethod;
-    if (httpMethod == "GET") {
-      const username = event.queryStringParameters.username;
 
-        const item = await getItem(username);
+    const httpMethod: string = event.routeKey
+    // if (httpMethod == "GET") {
+    if (httpMethod.includes("GET")) {
+        const ids = event.pathParameters.id;
+        if (ids) {
+
+            console.log(event.pathParameters);
+
+            const item = await getItem(ids);
+            return {
+                statusCode: 200,
+                body: JSON.stringify(item.Item),
+            };
+        } else {
+            const item = await getAll();
+            return {
+                statusCode: 200,
+                body: JSON.stringify(item),
+            };
+        }
+    } else if (
+        httpMethod.includes("ANY")
+    ) {
+        let obj = JSON.parse(event.body);
+        console.log(obj);
+        await post(obj)
         return {
             statusCode: 200,
-            body: JSON.stringify(item), 
+            body: JSON.stringify(obj),
         };
     }
     // else if (httpMethod == "POST") {
@@ -38,49 +60,59 @@ export const handler: Handler = async (event, context) => {
     // }
 };
 
+async function getAll() {
+    const client = new DynamoDBClient({ region: "ap-southeast-1" });
 
-async function getItem(name : string ) {
+    const params = {
+        TableName: TABLE_NAME,
+        KeyConditionExpression: 'pk = :pk',
+        // ExpressionAttributeValues: marshall({ ':pk': partitionKey }),
+        Limit: 1000,
+    };
+
+    const data = await client.send(new QueryCommand(params));
+    console.log("Success", JSON.stringify(data));
+    return data;
+}
+
+async function getItem(name: string) {
 
     const client = new DynamoDBClient({ region: "ap-southeast-1" });
 
     const params = {
         TableName: TABLE_NAME,
         Key: {
-          KEY_NAME: { N: name },
+            id: name
+
         },
-      };
+    };
 
-      const data = await client.send(new GetItemCommand(params));
-  console.log("Success", data.Item);
-  return data;
+    const data = await client.send(new GetCommand(params));
+    console.log("Success", data.Item);
+    return data;
+}
 
-    // const params : DynamoDB.DocumentClient.GetItemInput = {
-    //     Key: {
-    //     username: name,
-    //   },
-    //   TableName: TABLE_NAME,
-    // };
-    
-    // return dynamo
-    //   .get(params)
-    //   .promise()
-    //   .then((result) => {
-    //     console.log(result);
-    //     return result.Item;
-    //   });
-  }
+async function post(item: any) {
+    const client = DynamoDBDocumentClient.from(new DynamoDB({}))
+    await client.send(
+        new PutCommand({
+            TableName: TABLE_NAME,
+            Item: item,
+        })
+    );
+}
 
 async function scan() {
     console.log("SCAN");
-    
+
     const client = new DynamoDBClient({ region: "ap-southeast-1" });
 
-  const command = new ListTablesCommand({});
-  try {
-    const results = await client.send(command);
-    return results
-  } catch (err) {
-    console.error(err);
-  }
+    const command = new ListTablesCommand({});
+    try {
+        const results = await client.send(command);
+        return results
+    } catch (err) {
+        console.error(err);
+    }
 
 }
