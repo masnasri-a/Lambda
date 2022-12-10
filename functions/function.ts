@@ -4,15 +4,18 @@ import { DynamoDBClient,ListTablesCommand } from "@aws-sdk/client-dynamodb";
 const TABLE_NAME: string = "influencer";
 
 export const handler: Handler = async (event, context) => {
-    console.log(event);
-    const httpMethod = event.httpMethod;
-    if (httpMethod == "GET") {
-        const item = await scan();
-        return {
-            statusCode: 200,
-            body: JSON.stringify(item),
-        };
-    }
+    // console.log(event);
+    
+
+    
+    // const httpMethod = event.httpMethod;
+    // if (httpMethod == "GET") {
+    //     const item = await scan();
+    //     return {
+    //         statusCode: 200,
+    //         body: JSON.stringify(item), 
+    //     };
+    // }
     // else if (httpMethod == "POST") {
     //   return await save(event);
     // } else if (httpMethod == "DELETE") {
@@ -38,6 +41,7 @@ async function scan() {
     console.log("SCAN");
     
     const client = new DynamoDBClient({ region: "ap-southeast-1" });
+
   const command = new ListTablesCommand({});
   try {
     const results = await client.send(command);
